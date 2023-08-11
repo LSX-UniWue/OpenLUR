@@ -5,7 +5,8 @@ from operator import add
 class Requestor:
 
     def __init__(self, database):
-        self.conn = psycopg2.connect(dbname=database, user="docker", password="docker", port="5432", host="172.18.0.2")
+        self.conn = psycopg2.connect(
+            dbname=database, user="docker", password="docker", port="5432", host="172.18.0.2")
         self.cur = self.conn.cursor()
 
     def query_osm_polygone(self, lon_query, lat_query, radii, key, value):
@@ -19,7 +20,7 @@ class Requestor:
             additional_values.append(radius)
 
         query = query[
-                :-2] + "FROM planet_osm_polygon WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) AND {} = %s;".format(
+            :-2] + "FROM planet_osm_polygon WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) AND {} = %s;".format(
             key)
         additional_values.append(lon_query)
         additional_values.append(lat_query)
@@ -49,7 +50,8 @@ class Requestor:
             additional_values.append(lat_query)
             additional_values.append(radius)
 
-        query = query[:-2] + "FROM planet_osm_line WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s)"
+        query = query[:-2] + \
+            "FROM planet_osm_line WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s)"
         additional_values.append(lon_query)
         additional_values.append(lat_query)
         additional_values.append(max(radii))
@@ -93,7 +95,8 @@ class Requestor:
             additional_values.append(lat_query)
             additional_values.append(radius)
 
-        query = query[:-2] + "FROM planet_osm_line WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) "
+        query = query[:-2] + \
+            "FROM planet_osm_line WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) "
         additional_values.append(lon_query)
         additional_values.append(lat_query)
         additional_values.append(max(radii))
@@ -140,8 +143,6 @@ class Requestor:
         # print("DistPoly needed {}".format(time.time() - pre))
         return {value: self.cur.fetchone()[0]}
 
-
-
     def create_features(self, lon, lat):
         features = {}
         try:
@@ -149,16 +150,28 @@ class Requestor:
                 **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "commercial")),
                 **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "industrial")),
                 **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "residential")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "forest")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "meadow")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "orchard")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "farmland")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "vineyard")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "landuse", "grass")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "natural", "grassland")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "natural", "scrub")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "natural", "tree")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "natural", "tree_row")),
+                **(self.query_osm_polygone(lon, lat, list(range(50, 3050, 50)), "natural", "wood")),
                 **(self.query_osm_highway(lon, lat, list(range(50, 1550, 50)))),
                 **(self.query_osm_local_road(lon, lat, list(range(50, 1550, 50)))),
                 **(self.query_osm_point_distance(lon, lat, 'highway', 'traffic_signals')),
                 **(self.query_osm_line_distance(lon, lat, 'highway', 'motorway')),
                 **(self.query_osm_line_distance(lon, lat, 'highway', 'primary')),
                 **(self.query_osm_polygon_distance(lon, lat, 'landuse', 'industrial'))
+                # TODO: Add addition features here
             }
         except Exception as e:
             print(e)
-            print("error at point {}, {}".format(lat,lon))
+            print("error at point {}, {}".format(lat, lon))
 
             return {}
         return features
