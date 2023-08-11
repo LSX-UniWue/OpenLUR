@@ -10,4 +10,5 @@ ipynb/*
 *.json
 *.pyc
 *.png
-
+*.osm.pbf
+env*/
