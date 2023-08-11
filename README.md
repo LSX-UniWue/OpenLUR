@@ -3,6 +3,7 @@ OpenLUR is a off-the-shelf solution for globally available land use regression f
 # Requirements
 
 - python3 with requirements from requirements.txt
+- osm2pgsql
 - docker (recommended)
 - docker-compose (recommended)
 
