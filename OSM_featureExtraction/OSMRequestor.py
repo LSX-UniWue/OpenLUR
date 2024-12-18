@@ -20,8 +20,9 @@ class Requestor:
             additional_values.append(radius)
 
         query = query[
-            :-2] + "FROM planet_osm_polygon WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) AND {} = %s;".format(
-            key)
+            :-2] + "FROM planet_osm_polygon WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) AND \"{}\" = %s;".format(key)
+
+        #"FROM planet_osm_polygon WHERE ST_DWithin(geo, geography(ST_MakePoint(%s, %s)), %s) AND {} = %s;".format(key)
         additional_values.append(lon_query)
         additional_values.append(lat_query)
         additional_values.append(max(radii))
