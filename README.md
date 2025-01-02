@@ -1,10 +1,10 @@
 OpenLUR is a off-the-shelf solution for globally available land use regression for e.g. pollution prediction.
 
 # Changes from Origianl code files
-- Use "{}" in OSMRequestor.py, line 23
+- Use `\"{}\"` instead of {} in OSMRequestor.py, line 23
   
 Reason :
-Using "{}" in the query string ensures that the column name is properly quoted and interpreted by the SQL engine, which helps in avoiding syntax errors and ensures compatibility with PostgreSQL's handling of identifiers.
+Using `\"{}\"` in the query string ensures that the column name is properly quoted and interpreted by the SQL engine, which helps in avoiding syntax errors and ensures compatibility with PostgreSQL's handling of identifiers.
 Without the double quotes, if key was a reserved word or contained special characters, it could cause a syntax error or unexpected behavior in the SQL query.
 - Change NumPy version from 1.16.2 to 1.21.0
 
