@@ -17,8 +17,9 @@ Without the double quotes, if key was a reserved word or contained special chara
 ## Steps to run Project :
 ### Pre-steps while run
 1. Install the requirements from Requirements.txt
-2. create a new directory/folder named "OSM-data" in "OpenLUR > OSM_featureExtraction"
-3. Download data in .osm.pbf file from OpenStreetMap (link : https://download.geofabrik.de/) and navigate it to OpenLUR > OSM_featureExtraction > OSM-data
+2. create a new directory/folder named "OSM-data" in "OpenLUR > OSM_featureExtraction" 
+# TODO: do not reccommnend a folder that is also used for code. Recommend data instead
+4. Download data in .osm.pbf file from OpenStreetMap (link : https://download.geofabrik.de/) and navigate it to OpenLUR > OSM_featureExtraction > OSM-data
 
 ### Feature extraction from OpenStreetMap
 First start docker-container for the PostGIS database:
@@ -37,6 +38,7 @@ For Example
 ```
         python3 osm_feature_generation.py map bremen_db 53.02 53.20 8.56 8.96
 ```
+#TODO: I am getting a database unreachable error. How do I fix this?
 ```Password is "docker"```
 
 ### Using a file file with latitude and longitude values:
