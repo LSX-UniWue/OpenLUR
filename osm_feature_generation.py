@@ -1,5 +1,10 @@
 import argparse
+import profile
 import time
+
+import cProfile
+import pstats
+from io import StringIO
 
 import pandas as pd
 
@@ -7,6 +12,30 @@ from OSM_featureExtraction.database_generation_utils import create_db
 from OSM_featureExtraction.FeatureGenerator import FeatureGenerator
 
 
+def main_with_profiling(func, args):
+    """Execute the given function with profiling enabled."""
+    profiler = cProfile.Profile()
+    profiler.enable()
+
+    # Execute the target function
+    func(args)
+
+    profiler.disable()
+
+    # Output profiling results
+    print("\n--- Profiling Results ---")
+    stats = pstats.Stats(profiler, stream=StringIO())
+    stats.strip_dirs()
+    stats.sort_stats("cumulative")
+    stats.print_stats(20)  # Show top 20 function calls
+    print(stats.stream.getvalue())
+
+    # Optional: Save profiling data to file for detailed analysis
+    profiler.dump_stats("profiling_results.prof")
+    print("Profiling data saved to 'profiling_results.prof' for further analysis.")
+
+
+@profile
 def create_prediction_features(arguments):
     dbname = arguments.dbname
     latmin = arguments.latmin
@@ -27,6 +56,7 @@ def create_prediction_features(arguments):
     return fg.saveFeatures()
 
 
+@profile
 def create_file_features(arguments):
     df = pd.read_csv(arguments.file)
     latmin = df.latitude.min()
@@ -77,4 +107,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     print(args)
-    args.func(args)
+
+    main_with_profiling(args.func, args)
