@@ -7,6 +7,11 @@ Reason :
 Using `\"{}\"` in the query string ensures that the column name is properly quoted and interpreted by the SQL engine, which helps in avoiding syntax errors and ensures compatibility with PostgreSQL's handling of identifiers.
 Without the double quotes, if key was a reserved word or contained special characters, it could cause a syntax error or unexpected behavior in the SQL query.
 - Change NumPy version from 1.16.2 to 1.21.0
+  
+- Making Database Connection Parameters Configurable
+```
+        Check Making Database Connection Parameters Configurable.pdf
+```
 
 # Requirements
 - python3 (3.9.21) with requirements from requirements.txt
@@ -38,8 +43,12 @@ For Example
 ```
         python3 osm_feature_generation.py map bremen_db 53.02 53.20 8.56 8.96
 ```
-#TODO: I am getting a database unreachable error. How do I fix this?
 ```Password is "docker"```
+
+# TODO: I am getting a database unreachable error. How do I fix this?
+```
+        Check Making Database Connection Parameters Configurable.pdf
+```
 
 ### Using a file file with latitude and longitude values:
         python3 osm_feature_generation.py file <databasename in lowercase (e.g. city name)> <file (csv-file with lat and lon columns)> (-v <value to keep in the output file, optional>)
