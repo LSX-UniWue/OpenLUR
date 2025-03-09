@@ -4,9 +4,10 @@ from operator import add
 
 class Requestor:
 
-    def __init__(self, database):
+    def __init__(self, database, db_host="172.18.0.2", db_port="5432"):
         self.conn = psycopg2.connect(
-            dbname=database, user="docker", password="docker", port="5432", host="172.18.0.2")
+            dbname=database, user="docker", password="docker", 
+            port=db_port, host=db_host)
         self.cur = self.conn.cursor()
 
     def query_osm_polygone(self, lon_query, lat_query, radii, key, value):

@@ -9,12 +9,14 @@ import pyarrow.csv as pacsv
 
 class FeatureGenerator:
 
-    def __init__(self, dbname, filename=None, outpath=None):
+    def __init__(self, dbname, filename=None, outpath=None, db_host="172.18.0.2", db_port="5432"):
         self.dbname = dbname
         self.filename = dbname + ".csv" if filename is None else filename
         self.outpath = "" if outpath is None else outpath
         self.featuremethods = [self.getStandardFeatures]
         self.data = []
+        self.db_host = db_host
+        self.db_port = db_port
 
     def generateMap(self, latmin, latmax, lonmin, lonmax, granularity=0.01):
         """Generate grid points based on the specified granularity."""
@@ -67,8 +69,10 @@ class FeatureGenerator:
 
     def getStandardFeatures(self, lat, lon):
         """Fetch standard features for given coordinates."""
-        requestor = OSMRequestor.Requestor(self.dbname)
-        return requestor.create_features(lon, lat)
+        requestor = OSMRequestor.Requestor(self.dbname, self.db_host, self.db_port)
+        features = requestor.create_features(lon, lat)
+        requestor.close()  # Close connection to avoid resource leaks
+        return features
 
     def saveFeatures(self):
         """Save features to a CSV file using PyArrow for better performance."""
@@ -84,9 +88,9 @@ class FeatureGenerator:
         self.featuremethods.append(featuremethod)
 
 
-def main(database, file, n_workers, granularity=0.001):
+def main(database, file, n_workers, granularity=0.001, db_host="172.18.0.2", db_port="5432"):
     print(f"Processing file: {file} for database: {database}")
-    fg = FeatureGenerator(database)
+    fg = FeatureGenerator(database, db_host=db_host, db_port=db_port)
     df = pd.read_csv(file)
     latmin, latmax = df["latitude"].min(), df["latitude"].max()
     lonmin, lonmax = df["longitude"].min(), df["longitude"].max()
@@ -107,6 +111,8 @@ if __name__ == "__main__":
     parser.add_argument("file", help="File to build features for", type=str)
     parser.add_argument("-n", "--nWorkers", help="Number of parallel processes", type=int, default=1)
     parser.add_argument("-g", "--granularity", help="Granularity for grid generation", type=float, default=0.001)
+    parser.add_argument("--db-host", help="Database host IP address", type=str, default="172.18.0.2")
+    parser.add_argument("--db-port", help="Database port", type=str, default="5432")
 
     args = parser.parse_args()
-    main(args.database, args.file, args.nWorkers, args.granularity)
+    main(args.database, args.file, args.nWorkers, args.granularity, args.db_host, args.db_port)

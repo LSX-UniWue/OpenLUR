@@ -10,9 +10,9 @@ import urllib.request as r
 import psycopg2
 
 
-def check_db_exists(dbname):
+def check_db_exists(dbname, db_host="172.18.0.2", db_port="5432"):
     try:
-        conn = psycopg2.connect("dbname={}".format(dbname))
+        conn = psycopg2.connect(f"dbname={dbname} host={db_host} port={db_port} user=docker password=docker")
         conn.close()
         return True
     except psycopg2.DatabaseError:
@@ -72,12 +72,12 @@ def crop(infile, outfile, latmin, latmax, lonmin, lonmax):
     print("time needed: {} seconds.".format(time.time() - start))
 
 
-def load_db(infile, dbname):
+def load_db(infile, dbname, db_host="172.18.0.2", db_port="5432"):
     print("Drop and create DB")
     try:
-        conn = psycopg2.connect(dbname="template1", user="docker", password="docker", port="5432", host="172.18.0.2")
+        conn = psycopg2.connect(dbname="template1", user="docker", password="docker", port=db_port, host=db_host)
     except psycopg2.DatabaseError:
-        raise psycopg2.DatabaseError('I am unable to connect to the database {}.'.format(dbname))
+        raise psycopg2.DatabaseError(f'I am unable to connect to the database template1 at {db_host}:{db_port}.')
 
     cur = conn.cursor()
     conn.set_isolation_level(0)
@@ -93,17 +93,17 @@ def load_db(infile, dbname):
 
     print("Create extensions")
     try:
-        conn_new = psycopg2.connect(dbname=dbname, user="docker", password="docker", port="5432", host="172.18.0.2")
+        conn_new = psycopg2.connect(dbname=dbname, user="docker", password="docker", port=db_port, host=db_host)
         conn_new.autocommit = True
     except psycopg2.DatabaseError:
-        raise psycopg2.DatabaseError('I am unable to connect to the database {}.'.format(dbname))
+        raise psycopg2.DatabaseError(f'I am unable to connect to the database {dbname} at {db_host}:{db_port}.')
 
     cur_new = conn_new.cursor()
 
     cur_new.execute("CREATE EXTENSION postgis; CREATE EXTENSION hstore;")
 
     print("Load data to db: {}".format(infile))
-    subprocess.call(["osm2pgsql", "--create", "--database", dbname, "--username", "docker", "--password", "--host", "172.18.0.2", infile])
+    subprocess.call(["osm2pgsql", "--create", "--database", dbname, "--username", "docker", "--password", "--host", db_host, "--port", db_port, infile])
 
     print("Creating indexes")
     fd = open('OSM_featureExtraction/table_geography_creation.sql', 'r')
@@ -130,14 +130,15 @@ def load_db(infile, dbname):
     conn_new.close()
 
 
-def crop_load(infile, dbname, latmin, latmax, lonmin, lonmax):
+def crop_load(infile, dbname, latmin, latmax, lonmin, lonmax, db_host="172.18.0.2", db_port="5432"):
     outfile = "/".join(infile.split("/")[:-1]) + '/{}.osm.pbf'.format(dbname)
     crop(infile, outfile, latmin, latmax, lonmin, lonmax)
-    load_db(outfile, dbname)
+    load_db(outfile, dbname, db_host, db_port)
 
 
-def create_db(dbname, latmin, latmax, lonmin, lonmax, osmfile=None, rebuild=False):
-    exists = check_db_exists(dbname)
+def create_db(dbname, latmin, latmax, lonmin, lonmax, osmfile=None, rebuild=False, db_host="172.18.0.2", db_port="5432"):
+    print(f"DEBUG: Attempting to connect to database at {db_host}:{db_port}")
+    exists = check_db_exists(dbname, db_host, db_port)
     if exists:
         print("Database {} already exists".format(dbname))
 
@@ -151,14 +152,14 @@ def create_db(dbname, latmin, latmax, lonmin, lonmax, osmfile=None, rebuild=Fals
 
         croploadtime = time.time()
         # cropLoadOSM.cropLoad(osmfile, dbname, latmin-0.1, latmax+0.1, lonmin-0.1, lonmax+0.1)
-        load_db(osmfile, dbname)
+        load_db(osmfile, dbname, db_host, db_port)
         croploadtime = time.time() - croploadtime
         print("Times needed:\n\tDownload: {}s \n\tcropping and loading: {}s.".format(int(downloadtime),
                                                                                      int(croploadtime)))
 
 
-def main(infile, dbname, latmin, latmax, lonmin, lonmax):
-    crop_load(infile, dbname, latmin, latmax, lonmin, lonmax)
+def main(infile, dbname, latmin, latmax, lonmin, lonmax, db_host="172.18.0.2", db_port="5432"):
+    crop_load(infile, dbname, latmin, latmax, lonmin, lonmax, db_host, db_port)
 
 
 if __name__ == '__main__':
@@ -169,8 +170,10 @@ if __name__ == '__main__':
     parser.add_argument('latmax', type=float, help='maximum latitude')
     parser.add_argument('lonmin', type=float, help='minimum longitude')
     parser.add_argument('lonmax', type=float, help='maximum longitude')
+    parser.add_argument('--db-host', type=str, help='Database host IP address', default='172.18.0.2')
+    parser.add_argument('--db-port', type=str, help='Database port', default='5432')
 
     args = parser.parse_args()
     starttime = time.time()
-    main(args.infile, args.dbname.lower(), args.latmin, args.latmax, args.lonmin, args.lonmax)
+    main(args.infile, args.dbname.lower(), args.latmin, args.latmax, args.lonmin, args.lonmax, args.db_host, args.db_port)
     print("total time used: {} seconds".format(time.time() - starttime))
