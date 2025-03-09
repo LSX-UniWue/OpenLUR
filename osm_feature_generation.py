@@ -1,5 +1,5 @@
 import argparse
-import profile
+# import profile
 import time
 
 import cProfile
@@ -34,8 +34,6 @@ def main_with_profiling(func, args):
     profiler.dump_stats("profiling_results.prof")
     print("Profiling data saved to 'profiling_results.prof' for further analysis.")
 
-
-@profile
 def create_prediction_features(arguments):
     dbname = arguments.dbname
     latmin = arguments.latmin
@@ -55,8 +53,6 @@ def create_prediction_features(arguments):
     print("Time needed for the feature extraction: {}s".format(featuretime))
     return fg.saveFeatures()
 
-
-@profile
 def create_file_features(arguments):
     df = pd.read_csv(arguments.file)
     latmin = df.latitude.min()
@@ -75,14 +71,12 @@ def create_file_features(arguments):
     print("Time needed for the feature extraction: {}s".format(featuretime))
     return fg.saveFeatures()
 
-
 def standardparsers(subparser):
     subparser.add_argument('-f', '--osmfile', type=str, help='path to .osm.pbf file if already present', default=None)
     subparser.add_argument('-p', '--processors', type=int, help='Number of workers to use for parallel processes',
                            default=1)
     subparser.add_argument('-r', '--rebuild', action='store_true', help='rebuild database')
     return subparser
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

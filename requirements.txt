@@ -9,3 +9,4 @@ tensorboardX
 pillow
 tqdm
 matplotlib
+pyarrow
