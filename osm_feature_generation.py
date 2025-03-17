@@ -44,12 +44,13 @@ def create_prediction_features(arguments):
     n_workers = arguments.processors
     db_host = arguments.db_host
     db_port = arguments.db_port
+    config_file = arguments.config
     
     create_db(dbname, latmin, latmax, lonmin, lonmax, osmfile=osmfile, rebuild=arguments.rebuild,
              db_host=db_host, db_port=db_port)
 
     featuretime = time.time()
-    fg = FeatureGenerator(dbname, db_host=db_host, db_port=db_port)
+    fg = FeatureGenerator(dbname, config_file=config_file, db_host=db_host, db_port=db_port)
     fg.generateMap(latmin, latmax, lonmin, lonmax, granularity=0.001)
     fg.preproc_landuse_features_parallel(n_workers)
     featuretime = time.time() - featuretime
@@ -65,13 +66,14 @@ def create_file_features(arguments):
     lonmax = df.longitude.max()
     db_host = arguments.db_host
     db_port = arguments.db_port
+    config_file = arguments.config
     
     create_db(arguments.dbname, latmin, latmax, lonmin, lonmax, osmfile=arguments.osmfile, 
              rebuild=arguments.rebuild, db_host=db_host, db_port=db_port)
 
     print(df.head())
     featuretime = time.time()
-    fg = FeatureGenerator(arguments.dbname, filename=arguments.file, db_host=db_host, db_port=db_port)
+    fg = FeatureGenerator(arguments.dbname, filename=arguments.file, config_file=config_file, db_host=db_host, db_port=db_port)
     fg.set_data_from_pandas(df, value=arguments.value)
     fg.preproc_landuse_features_parallel(arguments.processors)
     featuretime = time.time() - featuretime
@@ -84,6 +86,7 @@ def standardparsers(subparser):
     subparser.add_argument('-p', '--processors', type=int, help='Number of workers to use for parallel processes',
                            default=1)
     subparser.add_argument('-r', '--rebuild', action='store_true', help='rebuild database')
+    subparser.add_argument('-c', '--config', type=str, help='Path to JSON configuration file for queries', default=None)
     # Add new parameters for database connection
     subparser.add_argument('--db-host', type=str, help='Database host IP address', default='172.18.0.2')
     subparser.add_argument('--db-port', type=str, help='Database port', default='5432')
