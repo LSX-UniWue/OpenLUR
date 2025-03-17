@@ -1,3 +1,5 @@
+# NOTE : Consider `openlur-query-configuration.md`
+
 OpenLUR is a off-the-shelf solution for globally available land use regression for e.g. pollution prediction.
 
 # Changes from Origianl code files
