@@ -1,13 +1,32 @@
 import psycopg2
+import os
 from operator import add
 
 
 class Requestor:
 
     def __init__(self, database):
-        self.conn = psycopg2.connect(
-            dbname=database, user="docker", password="docker", port="5432", host="172.18.0.2")
-        self.cur = self.conn.cursor()
+        # Get database connection parameters from environment variables
+        host = os.getenv('DB_HOST', 'localhost')
+        port = os.getenv('DB_PORT', '5432')
+        user = os.getenv('DB_USER', 'docker')
+        password = os.getenv('DB_PASSWORD', 'docker')
+        
+        print(f"Connecting to database: {database} at {host}:{port}")
+        
+        try:
+            self.conn = psycopg2.connect(
+                dbname=database, 
+                user=user, 
+                password=password, 
+                port=port, 
+                host=host
+            )
+            self.cur = self.conn.cursor()
+            print(f"✅ Successfully connected to database: {database}")
+        except psycopg2.Error as e:
+            print(f"❌ Failed to connect to database: {e}")
+            raise
 
     def query_osm_polygone(self, lon_query, lat_query, radii, key, value):
         query = "SELECT "
@@ -172,7 +191,6 @@ class Requestor:
         except Exception as e:
             print(e)
             print("error at point {}, {}".format(lat, lon))
-
             return {}
         return features
 

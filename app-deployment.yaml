@@ -1,0 +1,39 @@
+# app-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openlur-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openlur
+  template:
+    metadata:
+      labels:
+        app: openlur
+    spec:
+      containers:
+      - name: openlur
+        image: yash0521/openlur:latest  # You'll need to build and push this
+        envFrom:
+        - configMapRef:
+            name: openlur-config
+        volumeMounts:
+        - name: output-storage
+          mountPath: /code/output
+        - name: data-storage
+          mountPath: /code/data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        command: ["sleep", "infinity"]  # Keep container running
+      volumes:
+      - name: output-storage
+        emptyDir: {}
+      - name: data-storage
+        emptyDir: {}

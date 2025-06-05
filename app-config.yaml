@@ -1,0 +1,11 @@
+# app-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openlur-config
+data:
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "openlur"
+  DB_USER: "docker"
+  DB_PASSWORD: "docker"

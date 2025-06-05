@@ -6,13 +6,23 @@ import subprocess
 import sys
 import time
 import urllib.request as r
-
 import psycopg2
+
+
+def get_db_connection_params():
+    """Get database connection parameters from environment variables"""
+    return {
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'port': os.getenv('DB_PORT', '5432'),
+        'user': os.getenv('DB_USER', 'docker'),
+        'password': os.getenv('DB_PASSWORD', 'docker')
+    }
 
 
 def check_db_exists(dbname):
     try:
-        conn = psycopg2.connect("dbname={}".format(dbname))
+        params = get_db_connection_params()
+        conn = psycopg2.connect(dbname=dbname, **params)
         conn.close()
         return True
     except psycopg2.DatabaseError:
@@ -74,8 +84,10 @@ def crop(infile, outfile, latmin, latmax, lonmin, lonmax):
 
 def load_db(infile, dbname):
     print("Drop and create DB")
+    params = get_db_connection_params()
+    
     try:
-        conn = psycopg2.connect(dbname="template1", user="docker", password="docker", port="5432", host="172.18.0.2")
+        conn = psycopg2.connect(dbname="template1", **params)
     except psycopg2.DatabaseError:
         raise psycopg2.DatabaseError('I am unable to connect to the database {}.'.format(dbname))
 
@@ -83,27 +95,38 @@ def load_db(infile, dbname):
     conn.set_isolation_level(0)
 
     cur.execute("""DROP DATABASE IF EXISTS {};""".format(dbname))
-
-    # cur.fetchall()
     cur.execute("""CREATE DATABASE {};""".format(dbname))
-    # cur.fetchall()
 
     cur.close()
     conn.close()
 
     print("Create extensions")
     try:
-        conn_new = psycopg2.connect(dbname=dbname, user="docker", password="docker", port="5432", host="172.18.0.2")
+        conn_new = psycopg2.connect(dbname=dbname, **params)
         conn_new.autocommit = True
     except psycopg2.DatabaseError:
         raise psycopg2.DatabaseError('I am unable to connect to the database {}.'.format(dbname))
 
     cur_new = conn_new.cursor()
-
     cur_new.execute("CREATE EXTENSION postgis; CREATE EXTENSION hstore;")
 
     print("Load data to db: {}".format(infile))
-    subprocess.call(["osm2pgsql", "--create", "--database", dbname, "--username", "docker", "--password", "--host", "172.18.0.2", infile])
+    # Build osm2pgsql command with connection parameters
+    osm2pgsql_cmd = [
+        "osm2pgsql", 
+        "--create", 
+        "--database", dbname, 
+        "--username", params['user'],
+        "--host", params['host'],
+        "--port", str(params['port']),
+        infile
+    ]
+    
+    # Set password via environment variable for osm2pgsql
+    env = os.environ.copy()
+    env['PGPASSWORD'] = params['password']
+    
+    subprocess.call(osm2pgsql_cmd, env=env)
 
     print("Creating indexes")
     fd = open('OSM_featureExtraction/table_geography_creation.sql', 'r')
@@ -113,7 +136,6 @@ def load_db(infile, dbname):
     sql_commands = sql_file.split('\n')
     for command in sql_commands:
         if command:
-            # print(command)
             try:
                 cur_new.execute(command)
             except Exception as msg:
@@ -145,16 +167,21 @@ def create_db(dbname, latmin, latmax, lonmin, lonmax, osmfile=None, rebuild=Fals
         print("Creating DB for lon: {}/{}, lat: {}/{}".format(lonmin, lonmax, latmin, latmax))
         downloadtime = time.time()
         if not osmfile:
-            osmfile = download_bbox("OSM_featureExtraction/OSM-data/{}.osm".format(dbname), latmin - 0.1, latmax + 0.1,
+            # Create OSM-data directory if it doesn't exist
+            osm_data_dir = "OSM_featureExtraction/OSM-data"
+            if not os.path.exists(osm_data_dir):
+                os.makedirs(osm_data_dir)
+            
+            osmfile = download_bbox("{}/{}.osm".format(osm_data_dir, dbname), 
+                                    latmin - 0.1, latmax + 0.1,
                                     lonmin - 0.1, lonmax + 0.1)
         downloadtime = time.time() - downloadtime
 
         croploadtime = time.time()
-        # cropLoadOSM.cropLoad(osmfile, dbname, latmin-0.1, latmax+0.1, lonmin-0.1, lonmax+0.1)
         load_db(osmfile, dbname)
         croploadtime = time.time() - croploadtime
-        print("Times needed:\n\tDownload: {}s \n\tcropping and loading: {}s.".format(int(downloadtime),
-                                                                                     int(croploadtime)))
+        print("Times needed:\n\tDownload: {}s \n\tloading: {}s.".format(int(downloadtime),
+                                                                         int(croploadtime)))
 
 
 def main(infile, dbname, latmin, latmax, lonmin, lonmax):

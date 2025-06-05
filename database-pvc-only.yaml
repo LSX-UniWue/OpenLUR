@@ -1,0 +1,12 @@
+# database-pvc-only.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # Remove storageClass to use default, or ask your admin what storage classes are available
